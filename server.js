@@ -36,6 +36,14 @@ if (countRow.count === 0) {
   seedTransaction();
 }
 
+// Helper to normalize SQLite numeric booleans (0/1) to JavaScript booleans (false/true)
+function formatTask(row) {
+  if (!row) return null;
+  return {
+    ...row,
+    done: Boolean(row.done)
+  };
+}
 
 app.get("/health", (req, res) => {
   res.status(200).json({ status: "ok" });
@@ -50,20 +58,23 @@ app.get("/", (req, res) => {
 });
 
 // GET /tasks - List all tasks
-app.get('/tasks', (req, res) => {
-  res.status(200).json(tasks);
+app.get("/tasks", (req, res) => {
+  const rows = db.prepare("SELECT id, title, done FROM tasks").all();
+  res.status(200).json(rows.map(formatTask));
 });
 
 // GET /tasks/:id - Retrieve single task
-app.get('/tasks/:id', (req, res) => {
+app.get("/tasks/:id", (req, res) => {
   const id = parseInt(req.params.id, 10);
-  const task = tasks.find(t => t.id === id);
+  const row = db
+    .prepare("SELECT id, title, done FROM tasks WHERE id = ?")
+    .get(id);
 
-  if (!task) {
+  if (!row) {
     return res.status(404).json({ error: `Task ${id} not found` });
   }
 
-  res.status(200).json(task);
+  res.status(200).json(formatTask(row));
 });
 
 // POST /tasks - Create task
