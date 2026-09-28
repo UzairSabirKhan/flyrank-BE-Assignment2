@@ -51,3 +51,21 @@ Keep-Alive: timeout=5
 Interactive API testing documentation is available at `http://localhost:3000/docs`.
 
 ![Swagger UI](docs/swaggerui.png)
+
+## Database Storage (SQLite)
+
+This API uses **SQLite** via `better-sqlite3` for persistent storage:
+- **Why SQLite?** It is a serverless, zero-configuration database contained entirely within a single file (`tasks.db`)[cite: 2]. It enables true persistence across restarts without requiring third-party database servers[cite: 2].
+- **Zero-Setup Startup:** The database file and `tasks` table are automatically initialized and seeded on the first boot[cite: 2].
+
+
+### Manual SQL Verification
+Executed in SQLite Intelliview Extension for SQLite[cite: 2]:
+```sql
+SELECT COUNT(*) FROM tasks WHERE done = 0;
+```
+*Result returned the count of unfinished tasks directly from disk.*
+![SQLite Intelliview Screenshot](docs/sqlite-intelliview.png)
+
+### SQLite Intelliview Extension Screenshot
+![SQLite Intelliview Screenshot](docs/intelliview.png)
