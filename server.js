@@ -102,47 +102,57 @@ app.post("/tasks", (req, res) => {
 });
 
 // PUT /tasks/:id - Replace task fields
-app.put('/tasks/:id', (req, res) => {
+app.put("/tasks/:id", (req, res) => {
   const id = parseInt(req.params.id, 10);
-  const taskIndex = tasks.findIndex(t => t.id === id);
+  const existing = db.prepare("SELECT * FROM tasks WHERE id = ?").get(id);
 
-  if (taskIndex === -1) {
+  if (!existing) {
     return res.status(404).json({ error: `Task ${id} not found` });
   }
 
   const { title, done } = req.body;
 
-  if (title !== undefined && (typeof title !== 'string' || title.trim() === '')) {
+  if (
+    title !== undefined &&
+    (typeof title !== "string" || title.trim() === "")
+  ) {
     return res.status(400).json({ error: "Field 'title' cannot be empty" });
   }
 
-  if (done !== undefined && typeof done !== 'boolean') {
+  if (done !== undefined && typeof done !== "boolean") {
     return res.status(400).json({ error: "Field 'done' must be a boolean" });
   }
 
   if (title === undefined && done === undefined) {
-    return res.status(400).json({ error: "Provide at least 'title' or 'done' to update" });
+    return res
+      .status(400)
+      .json({ error: "Provide at least 'title' or 'done' to update" });
   }
 
-  tasks[taskIndex] = {
-    ...tasks[taskIndex],
-    ...(title !== undefined && { title: title.trim() }),
-    ...(done !== undefined && { done })
-  };
+  const updatedTitle = title !== undefined ? title.trim() : existing.title;
+  const updatedDone = done !== undefined ? (done ? 1 : 0) : existing.done;
 
-  res.status(200).json(tasks[taskIndex]);
+  db.prepare("UPDATE tasks SET title = ?, done = ? WHERE id = ?").run(
+    updatedTitle,
+    updatedDone,
+    id,
+  );
+
+  const updated = db
+    .prepare("SELECT id, title, done FROM tasks WHERE id = ?")
+    .get(id);
+  res.status(200).json(formatTask(updated));
 });
 
-// DELETE /tasks/:id - Remove a task
-app.delete('/tasks/:id', (req, res) => {
+// DELETE /tasks/:id - Remove task
+app.delete("/tasks/:id", (req, res) => {
   const id = parseInt(req.params.id, 10);
-  const taskIndex = tasks.findIndex(t => t.id === id);
+  const info = db.prepare("DELETE FROM tasks WHERE id = ?").run(id);
 
-  if (taskIndex === -1) {
+  if (info.changes === 0) {
     return res.status(404).json({ error: `Task ${id} not found` });
   }
 
-  tasks.splice(taskIndex, 1);
   res.status(204).send();
 });
 
