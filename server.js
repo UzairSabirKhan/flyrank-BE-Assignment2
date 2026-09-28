@@ -4,16 +4,38 @@ const PORT = 3000;
 
 app.use(express.json());
 
+const Database = require("better-sqlite3");
+const db = new Database("tasks.db");
+
+db.pragma("journal_mode = WAL");
+
 const swaggerUi = require("swagger-ui-express");
 const swaggerDocument = require("./openapi.json");
 
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-let tasks = [
-  { id: 1, title: "Review FlyRank lecture", done: true },
-  { id: 2, title: "Build Project", done: false },
-  { id: 3, title: "Push to GitHub", done: false },
-];
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS tasks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    done INTEGER NOT NULL DEFAULT 0
+  )
+`);
+
+const countRow = db.prepare("SELECT COUNT(*) as count FROM tasks").get();
+if (countRow.count === 0) {
+  const insertSeed = db.prepare(
+    "INSERT INTO tasks (title, done) VALUES (?, ?)",
+  );
+  const seedTransaction = db.transaction(() => {
+    insertSeed.run("Review FlyRank lecture", 1);
+    insertSeed.run("Build Project", 0);
+    insertSeed.run("Push to GitHub", 0);
+  });
+  seedTransaction();
+}
+
 
 app.get("/health", (req, res) => {
   res.status(200).json({ status: "ok" });
