@@ -78,22 +78,26 @@ app.get("/tasks/:id", (req, res) => {
 });
 
 // POST /tasks - Create task
-app.post('/tasks', (req, res) => {
+app.post("/tasks", (req, res) => {
   const { title } = req.body;
 
-  // Validation: ensure title exists and is not an empty/whitespace string
-  if (!title || typeof title !== 'string' || title.trim() === '') {
-    return res.status(400).json({ error: "Field 'title' is required and cannot be empty" });
+  if (!title || typeof title !== "string" || title.trim() === "") {
+    return res
+      .status(400)
+      .json({ error: "Field 'title' is required and cannot be empty" });
   }
 
-  const nextId = tasks.length > 0 ? Math.max(...tasks.map(t => t.id)) + 1 : 1;
+  const cleanTitle = title.trim();
+  const info = db
+    .prepare("INSERT INTO tasks (title, done) VALUES (?, 0)")
+    .run(cleanTitle);
+
   const newTask = {
-    id: nextId,
-    title: title.trim(),
-    done: false
+    id: Number(info.lastInsertRowid),
+    title: cleanTitle,
+    done: false,
   };
 
-  tasks.push(newTask);
   res.status(201).json(newTask);
 });
 
