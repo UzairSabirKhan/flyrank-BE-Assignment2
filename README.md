@@ -49,3 +49,5 @@ Keep-Alive: timeout=5
 ## Swagger UI
 
 Interactive API testing documentation is available at `http://localhost:3000/docs`.
+
+![Swagger UI](docs/swaggerui.png)
